@@ -29,6 +29,15 @@ function! s:findMainDirectory(fileAbsolutePath)
     return system(l:cmdTxt)
 endfunction
 
+" 檢查執行文件是否存在，若存在則返回目錄路徑
+function! s:checkMainDirectory(fileAbsolutePath)
+    let l:mainDirectory = s:findMainDirectory(a:fileAbsolutePath)
+    if l:mainDirectory == ''
+        throw '找不到擁有 "' . s:shFilePathPart . '" 的目錄'
+    endif
+    return l:mainDirectory
+endfunction
+
 " 檢查容器是否存在
 function! s:checkContainer()
     let l:cmdTxt = ''
@@ -42,7 +51,10 @@ function! s:checkContainer()
         \ .   ' echo -n "找不到 \"$tmpImgName\" 的 docker 容器";'
         \ .   ' exit 1;'
         \ . ' fi'
-    return system(l:cmdTxt)
+    let l:rtnMsg = system(l:cmdTxt)
+    if v:shell_error
+        throw l:rtnMsg
+    endif
 endfunction
 
 " 取得運行命令程式碼
@@ -85,7 +97,7 @@ endfunction
 " 執行命令
 " machine != docker 都視為以容器執行
 function! s:run(machine, method, fileAbsolutePath, fileExt)
-    let l:mainDirectory = s:findMainDirectory(a:fileAbsolutePath)
+    let l:mainDirectory = s:checkMainDirectory(a:fileAbsolutePath)
 
     if l:mainDirectory == ''
         throw '找不到擁有 "' . s:shFilePath . '" 的目錄'
@@ -108,12 +120,7 @@ endfunction
 
 " 容器執行命令
 function! cmdByU#Run(method)
-    " 檢查容器是否存在
-    let l:rtnMsg = s:checkContainer()
-    if v:shell_error
-        throw l:rtnMsg
-    end
-
+    call s:checkContainer()
     call s:run('docker', a:method, expand('%:p'), expand('%:e'))
 endfunction
 
