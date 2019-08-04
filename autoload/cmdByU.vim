@@ -39,6 +39,20 @@ function! s:getRunCmdTxt(mainDirectory, fileAbsolutePath, fileExt, method, isUse
 endfunction
 
 
+" 將標準輸出覆寫到文件上
+function! cmdByU#Overwrite(cmdTxt)
+    let &formatprg = a:cmdTxt
+    normal! ggVGgq
+endfunction
+
+" 將標準輸出寫到 quickfix-window 窗格
+function! cmdByU#ShowMsg(cmdTxt)
+    let &makeprg = a:cmdTxt
+    make
+    copen
+endfunction
+
+
 " 執行命令
 function! cmdByU#Run(method)
     let l:fileAbsolutePath = expand('%:p')
@@ -50,7 +64,15 @@ function! cmdByU#Run(method)
 
     let l:cmdTxt = s:getRunCmdTxt(l:mainDirectory, l:fileAbsolutePath,
         \ expand('%:e'), a:method, 0)
-    exec '!' . l:cmdTxt
+    if a:method =~# '^format\([A-Z].*\)\?$'
+        " 執行格式化命令
+        call cmdByU#Overwrite(l:cmdTxt)
+    elseif a:method =~# '^syntax\([A-Z].*\)\?$'
+        " 執行檢查語法命令
+        call cmdByU#ShowMsg(l:cmdTxt)
+    else
+        exec '!' . l:cmdTxt
+    endif
 endfunction
 
 " TODO run with docker
