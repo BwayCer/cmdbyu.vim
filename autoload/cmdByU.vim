@@ -6,8 +6,8 @@ function! s:safeQuote(path)
 endfunction
 
 
-" cmdbyu.sh 文件路徑
-let s:shFilePath = '.vimcode/cmdbyu.sh'
+" cmdByU.vim 的執行文件路徑
+let s:shFilePathPart = '.vimcode/cmdbyu.sh'
 " 容器名稱
 let s:containerName = 'local/vimcmdbyu:latest'
 
@@ -16,7 +16,7 @@ let s:containerName = 'local/vimcmdbyu:latest'
 function! s:findMainDirectory(fileAbsolutePath)
     let l:cmdTxt = 'tmpDir=`realpath "' . s:safeQuote(a:fileAbsolutePath) . '"`;'
         \ . ' while [ -n "y" ]; do'
-        \ .   ' tmpConfigDefaultPath="$tmpDir/' . s:shFilePath . '";'
+        \ .   ' tmpConfigDefaultPath="$tmpDir/' . s:shFilePathPart . '";'
         \ .   ' tmpNextDir=`dirname "$tmpDir"`;'
         \ .   ' if [ -f "$tmpConfigDefaultPath" ]; then'
         \ .     ' echo -n "$tmpDir";'
@@ -59,9 +59,10 @@ endfunction
 
 " 取得運行命令程式碼
 " @param {Number} ynUseDocker - 0 or 1。
-function! s:getRunCmdTxt(ynUseDocker, mainDirectory, fileAbsolutePath, fileExt, method)
+function! s:getRunCmdTxt(ynUseDocker, shFile, method, fileAbsolutePath, fileExt, mainDirectory)
     let l:safeMainDirectory = s:safeQuote(a:mainDirectory)
-    let l:cmdTxt = 'sh "' . l:safeMainDirectory . '/' . s:shFilePath . '"'
+
+    let l:cmdTxt = 'sh "' . s:safeQuote(a:shFile) . '"'
         \ . ' "' . s:safeQuote(a:method) . '"'
         \ . ' "' . s:safeQuote(a:fileAbsolutePath) . '"'
         \ . ' ".' . s:safeQuote(a:fileExt) . '"'
@@ -96,16 +97,24 @@ endfunction
 
 " 執行命令
 " machine != docker 都視為以容器執行
-function! s:run(machine, method, fileAbsolutePath, fileExt)
+function! s:run(method, fileAbsolutePath, fileExt, machine, assignShFile)
     let l:mainDirectory = s:checkMainDirectory(a:fileAbsolutePath)
-
-    if l:mainDirectory == ''
-        throw '找不到擁有 "' . s:shFilePath . '" 的目錄'
+    let l:ynUseDocker = !(a:machine != 'docker')
+    if a:assignShFile == ''
+        let l:shFile = l:mainDirectory . '/' . s:shFilePathPart
+    else
+        if a:assignShFile == 'global'
+            let l:shFile = g:cmdbyu_globalShFilePath
+        else
+            let l:shFile = a:assignShFile
+        endif
+        if findfile(a:assignShFile) == ''
+            throw '找不到 "' . l:shFile . '" 的 cmdByU.vim 執行文件。'
+        endif
     endif
 
-    let l:ynUseDocker = !(a:machine != 'docker')
-    let l:cmdTxt = s:getRunCmdTxt(l:ynUseDocker,
-        \ l:mainDirectory, a:fileAbsolutePath, a:fileExt, a:method)
+    let l:cmdTxt = s:getRunCmdTxt(l:ynUseDocker, l:shFile,
+        \ a:method, a:fileAbsolutePath, a:fileExt, l:mainDirectory)
 
     if a:method =~# '^format\([A-Z].*\)\?$'
         " 執行格式化命令
@@ -119,13 +128,15 @@ function! s:run(machine, method, fileAbsolutePath, fileExt)
 endfunction
 
 " 容器執行命令
-function! cmdByU#Run(method)
+function! cmdByU#Run(method, ...)
+    let l:assignShFile = get(a:, 1, '')
     call s:checkContainer()
-    call s:run('docker', a:method, expand('%:p'), expand('%:e'))
+    call s:run(a:method, expand('%:p'), expand('%:e'), 'docker', l:assignShFile)
 endfunction
 
 " 主機執行命令
-function! cmdByU#HostRun(method)
-    call s:run('host', a:method, expand('%:p'), expand('%:e'))
+function! cmdByU#HostRun(method, ...)
+    let l:assignShFile = get(a:, 1, '')
+    call s:run(a:method, expand('%:p'), expand('%:e'), 'host', l:assignShFile)
 endfunction
 
