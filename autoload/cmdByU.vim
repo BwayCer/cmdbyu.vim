@@ -87,7 +87,7 @@ function! cmdByU#Overwrite(cmdTxt)
     normal! ggVGgq
 endfunction
 
-" 將標準輸出寫到 quickfix-window 窗格
+" 將標準輸出顯示於 quickfix-window 窗格
 function! cmdByU#ShowMsg(cmdTxt)
     let &makeprg = a:cmdTxt
     make
