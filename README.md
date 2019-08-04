@@ -37,6 +37,16 @@ let g:cmdbyu_dockerCarryOption = '--network host'
 
 **執行文件：**
 
+命令預設會由當前文件路徑開始向上層目錄查找包含 `.vimcode/cmdbyu.sh` 文件的目錄，
+將其視為專案目錄，
+並帶入相關參數運行其文件：
+
+```
+sh <專案目錄路徑>/.vimcode/cmdbyu.sh <方法 (format|syntax|*)> \
+    <當前文件路徑> <當前文件副檔名> <專案目錄路徑> \
+    <使用容器資訊 (inDocker|unDocker)>
+```
+
 關於執行文件可參考
 [`./test/exampleDirectory/.vimcode/cmdbyu.sh`](./test/exampleDirectory/.vimcode/cmdbyu.sh)
 文件。

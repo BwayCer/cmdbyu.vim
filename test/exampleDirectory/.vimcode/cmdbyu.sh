@@ -8,6 +8,8 @@
 # #     * run:      運行該文件或專案。
 # #     * dev:      開發模式下運行該文件或專案。
 # [[USAGE]] <方法 (format|syntax|run|dev)>
+#           <文件路徑> <文件副檔名> <專案目錄路徑>
+#           <使用容器資訊 (inDocker|unDocker)>
 
 
 ##shStyle 介面函式
