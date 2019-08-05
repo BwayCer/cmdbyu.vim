@@ -92,6 +92,12 @@ function! cmdByU#ShowMsg(cmdTxt)
     let &makeprg = a:cmdTxt
     make
     copen
+    if line('$') == 1 && getline(1) == ''
+        cclose
+    else
+        " 單引號無效果
+        exec "normal! \<CR>"
+    endif
 endfunction
 
 
