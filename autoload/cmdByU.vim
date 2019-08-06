@@ -124,7 +124,7 @@ function! s:run(method, fileAbsolutePath, fileExt, machine, assignShFile)
         else
             let l:shFile = a:assignShFile
         endif
-        if findfile(a:assignShFile) == ''
+        if empty(findfile(l:shFile))
             throw '找不到 "' . l:shFile . '" 的 cmdByU.vim 執行文件。'
         endif
     endif
@@ -132,6 +132,8 @@ function! s:run(method, fileAbsolutePath, fileExt, machine, assignShFile)
     let l:cmdTxt = s:getRunCmdTxt(l:ynUseDocker, l:shFile,
         \ a:method, a:fileAbsolutePath, a:fileExt, l:mainDirectory)
 
+    " 執行命令的訊息
+    echom l:cmdTxt
     if a:method =~# '^format\([A-Z].*\)\?$'
         " 執行格式化命令
         call cmdByU#Overwrite(l:cmdTxt)
