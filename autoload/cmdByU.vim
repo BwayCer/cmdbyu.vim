@@ -5,6 +5,16 @@ function! s:safeQuote(path)
     return substitute(a:path, '"', '\\\"', 'g')
 endfunction
 
+" 取得設定變數值
+" GitHub BwayCer/bway.vim/autoload/bway/utils.vim
+function! s:getVar(name)
+    let l:result = get(g:, 'cmdbyu_' . a:name)
+    if !empty(l:result) " or l:result != '0'
+        return l:result
+    endif
+    return get(g:cmdbyu_getVar_conf, a:name, 0)
+endfunction
+
 
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
@@ -72,7 +82,7 @@ function! s:getRunCmdTxt(ynUseDocker, shFile, method, fileAbsolutePath, fileExt,
     if a:ynUseDocker
         let l:execDocker = 'docker run --rm'
             \ . ' --volume "' . l:safeMainDirectory . ':' . l:safeMainDirectory . '"'
-            \ . ' ' . g:cmdbyu_dockerCarryOption
+            \ . ' ' . s:getVar('dockerCarryOption')
             \ . ' ' . s:containerName
         let l:cmdTxt = l:execDocker . ' ' . l:cmdTxt
     endif
@@ -110,7 +120,7 @@ function! s:run(method, fileAbsolutePath, fileExt, machine, assignShFile)
         let l:shFile = l:mainDirectory . '/' . s:shFilePathPart
     else
         if a:assignShFile == 'global'
-            let l:shFile = g:cmdbyu_globalShFilePath
+            let l:shFile = s:getVar('globalShFilePath')
         else
             let l:shFile = a:assignShFile
         endif
