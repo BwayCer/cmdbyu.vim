@@ -9,5 +9,5 @@
 
  命令                            | 方法參數                                                        | \[執行文件參數\]
 :----:                           |:--------:                                                       |:------------
-`CmdByURun`<br />`CmdByUHostRun` | `format`<br />`syntax`<br />`syntaxEmpty`<br />`run`<br />`dev` | `golbal`<br />`g:cmdbyu_globalShFilePath`<br />`path/to/run.sh`
+`CmdByURun`<br />`CmdByUHostRun` | `format`<br />`syntax`<br />`syntaxEmpty`<br />`run`<br />`dev` | `golbal`<br />`path/to/runShDir`
 
