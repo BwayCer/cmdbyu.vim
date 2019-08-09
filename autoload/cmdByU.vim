@@ -111,10 +111,11 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
 
     " 執行命令的訊息
     echom l:cmdTxt
-    if a:method =~# '^format\([A-Z].*\)\?$'
+    return
+    if a:method =~# '^format.*'
         " 執行格式化命令
         call cmdByU#Overwrite(l:cmdTxt)
-    elseif a:method =~# '^syntax\([A-Z].*\)\?$'
+    elseif a:method =~# '^syntax.*'
         " 執行檢查語法命令
         call cmdByU#ShowMsg(l:cmdTxt)
     else
