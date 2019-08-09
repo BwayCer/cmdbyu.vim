@@ -10,6 +10,13 @@
 
 
 
+## 依賴
+
+
+* [GitHub BwayCer/bway.vim/autoload/canUtils.vim](https://github.com/BwayCer/bway.vim/blob/master/autoload/canUtils.vim)
+
+
+
 ## 使用方式
 
 

@@ -1,23 +1,12 @@
 
-" 以反斜線編碼文字中的引號
-" GitHub BwayCer/bway.vim/autoload/bway/utils.vim
-function! s:safeQuote(path)
-    return substitute(a:path, '"', '\\\"', 'g')
-endfunction
-
 " 取得設定變數值
-" GitHub BwayCer/bway.vim/autoload/bway/utils.vim
 function! s:getVar(name)
-    let l:result = get(g:, 'cmdbyu_' . a:name)
-    if !empty(l:result) " or l:result != '0'
-        return l:result
-    endif
-    return get(g:cmdbyu_getVar_conf, a:name, 0)
+    return canUtils#GetVar('cmdbyu' . a:name)
 endfunction
 
 
-let s:_dirvi = bway#utils#GetDirVi(':h:h')
-let s:shFindVimCodeDir = bway#utils#GetShFile(s:_dirvi . '/lib/findVimCodeDirectory.sh')
+let s:_dirvi = canUtils#GetDirVi(':h:h')
+let s:findVimCodeDirFilePath = s:_dirvi . '/lib/findVimCodeDirectory.sh'
 
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
@@ -28,9 +17,8 @@ let s:containerName = 'local/vimcmdbyu:latest'
 " 檢查執行文件是否存在，若存在則返回目錄路徑
 " @throws '找不到擁有 s:shFilePathPart 的目錄
 function! CheckProjectDirectory(fileAbsolutePath)
-    let l:projectDirectory = system(s:shFindVimCodeDir
-        \ . ' "' . bway#utils#SafeQuote(s:shFilePathPart) . '"'
-        \ . ' "' . bway#utils#SafeQuote(a:fileAbsolutePath) . '"')
+    let l:projectDirectory = canUtils#Sh(s:findVimCodeDirFilePath,
+        \ s:shFilePathPart, a:fileAbsolutePath)
     if v:shell_error != 0
         throw '找不到擁有 "' . s:shFilePathPart . '" 的目錄'
     endif
@@ -59,14 +47,12 @@ endfunction
 " 取得運行命令程式碼
 " @param {Number} ynUseDocker - 0 or 1。
 function! s:getRunCmdTxt(ynUseDocker, shFile, method, fileAbsolutePath, fileExt, projectDirectory)
-    let l:safeProjectDirectory = s:safeQuote(a:projectDirectory)
+    let l:safeProjectDirectory = canUtils#SafeQuote(a:projectDirectory)
 
-    let l:cmdTxt = 'sh "' . s:safeQuote(a:shFile) . '"'
-        \ . ' "' . s:safeQuote(a:method) . '"'
-        \ . ' "' . s:safeQuote(a:fileAbsolutePath) . '"'
-        \ . ' ".' . s:safeQuote(a:fileExt) . '"'
-        \ . ' "' . l:safeProjectDirectory . '"'
-        \ . ' "' . (a:ynUseDocker ? 'inDocker' : 'unDocker') . '"'
+    let l:cmdTxt = canUtils#GetCmdTxt(
+        \ 'sh', a:shFile, a:method, a:fileAbsolutePath, ('.' . a:fileExt)
+        \ l:safeProjectDirectory,
+        \ (a:ynUseDocker ? 'inDocker' : 'unDocker'))
 
     if a:ynUseDocker
         let l:execDocker = 'docker run --rm'
