@@ -20,7 +20,8 @@ fnMain() {
     local filePath="$2"
     local fileExt="$3"
     local projectDir="$4"
-    local useDockerMsg="$5"
+    local vimcodeDir="$5"
+    local useDockerMsg="$6"
 
     case "$method" in
         format )
@@ -46,12 +47,12 @@ fnMain() {
     esac
 }
 fnMain_carryArgs() {
-    printf "in %s\n" "`realpath "$0"`"
-    printf "CmdByU:"
+    printf "PWD: %s\nfile: %s\n" "$PWD" "`realpath "$0"`"
+    printf "CmdByU: (%s)" "$#"
     printf " %s," "$@"
     echo " nil"
-    printf "method: %s\nfPat: %s\nfExt: %s\npDir: %s\nuseDockerMsg: %s\n" \
-        "$1" "$2" "$3" "$4" "$5"
+    printf "method: %s\nfPat: %s\nfExt: %s\npjDir: %s\nvcDir: %s\nuseDockerMsg: %s\n" \
+        "$1" "$2" "$3" "$4" "$5" "$6"
 }
 
 

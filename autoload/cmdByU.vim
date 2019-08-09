@@ -10,6 +10,7 @@ let s:findVimCodeDirFilePath = s:_dirvi . '/lib/findVimCodeDirectory.sh'
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
 let s:shFileParentPathPart = fnamemodify(s:shFilePathPart, ':h')
+let s:tmpBufferContentPathPart = s:shFileParentPathPart . '/bufferContent.tmp'
 
 
 " 檢查執行文件是否存在，若存在則返回專案目錄路徑
@@ -67,10 +68,11 @@ endfunction
 function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir, shFileDir)
     let l:ynUseDocker = !(a:machine != 'docker')
     let l:shFile = a:shFileDir . '/' . s:shFilePathPart
+    let l:shFileParentDir = a:shFileDir . '/' . s:shFileParentPathPart
 
     let l:cmdTxt = canUtils#GetCmdTxt('sh', l:shFile,
         \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : '.' . a:fileExt),
-        \ a:projectDir, (l:ynUseDocker ? 'inDocker' : 'unDocker'))
+        \ a:projectDir, l:shFileParentDir, (l:ynUseDocker ? 'inDocker' : 'unDocker'))
 
     if l:ynUseDocker
         let l:cmdTxt = s:replaceDockerCmd(a:shFileDir, a:projectDir, l:cmdTxt)
@@ -105,13 +107,17 @@ endfunction
 function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
     let l:projectDir = s:checkProjectDirectory(a:fileAbsolutePath)
     let l:shFileDir = s:checkShFileDirectory(l:projectDir, a:assignShFileDirArgu)
+    let l:tmpBufferContentPath = l:shFileDir . '/' . s:tmpBufferContentPathPart
     let l:cmdTxt = s:getRunCmdTxt(
         \ a:machine, a:method, a:fileAbsolutePath, a:fileExt,
         \ l:projectDir, l:shFileDir)
 
+    " 不用 \"\" 包覆沒關係，會被以空白格寫入
+    exec 'write! ' . l:tmpBufferContentPath
+
     " 執行命令的訊息
     echom l:cmdTxt
-    return
+
     if a:method =~# '^format.*'
         " 執行格式化命令
         call cmdByU#Overwrite(l:cmdTxt)
@@ -121,6 +127,8 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
     else
         exec '!' . l:cmdTxt
     endif
+
+    call canUtils#Sh('rm', l:tmpBufferContentPath)
 endfunction
 
 " 容器執行命令
