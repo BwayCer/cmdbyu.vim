@@ -1,80 +1,79 @@
 
-" 以反斜線編碼文字中的引號
-" GitHub BwayCer/bway.vim/autoload/bway/utils.vim
-function! s:safeQuote(path)
-    return substitute(a:path, '"', '\\\"', 'g')
+" 取得設定變數值
+function! s:getVar(name)
+    return canUtils#GetVar('cmdbyu', a:name)
 endfunction
 
+let s:_dirvi = fnamemodify(resolve(expand('<sfile>:p')), ':h:h')
+let s:findVimCodeDirFilePath = s:_dirvi . '/lib/findVimCodeDirectory.sh'
 
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
-" 容器名稱
-let s:containerName = 'local/vimcmdbyu:latest'
+let s:shFileParentPathPart = fnamemodify(s:shFilePathPart, ':h')
 
 
-" 查找擁有執行文件的目錄
-function! s:findMainDirectory(fileAbsolutePath)
-    let l:cmdTxt = 'tmpDir=`realpath "' . s:safeQuote(a:fileAbsolutePath) . '"`;'
-        \ . ' while [ -n "y" ]; do'
-        \ .   ' tmpConfigDefaultPath="$tmpDir/' . s:shFilePathPart . '";'
-        \ .   ' tmpNextDir=`dirname "$tmpDir"`;'
-        \ .   ' if [ -f "$tmpConfigDefaultPath" ]; then'
-        \ .     ' echo -n "$tmpDir";'
-        \ .     ' break;'
-        \ .   ' elif [ "$tmpNextDir" == "/home" ] || [ "$tmpNextDir" == "/" ]; then'
-        \ .     ' break;'
-        \ .   ' fi;'
-        \ .   ' tmpDir=$tmpNextDir;'
-        \ . ' done'
-    return system(l:cmdTxt)
-endfunction
-
-" 檢查執行文件是否存在，若存在則返回目錄路徑
-function! s:checkMainDirectory(fileAbsolutePath)
-    let l:mainDirectory = s:findMainDirectory(a:fileAbsolutePath)
-    if l:mainDirectory == ''
+" 檢查執行文件是否存在，若存在則返回專案目錄路徑
+" @throws '找不到擁有 s:shFilePathPart 的目錄
+function! s:checkProjectDirectory(fileAbsolutePath)
+    let l:projectDir = canUtils#Sh('sh', s:findVimCodeDirFilePath,
+        \ s:shFilePathPart, a:fileAbsolutePath)
+    if v:shell_error != 0
         throw '找不到擁有 "' . s:shFilePathPart . '" 的目錄'
     endif
-    return l:mainDirectory
+    return l:projectDir
 endfunction
 
-" 檢查容器是否存在
-function! s:checkContainer()
-    let l:cmdTxt = ''
-        \ . ' if ! type docker &> /dev/null ; then'
-        \ .   ' echo -n "找不到 \`docker\` 命令";'
-        \ .   ' exit 1;'
-        \ . ' fi;'
-        \ . ' tmpImgName="' . s:containerName . '";'
-        \ . ' tmp=`docker images --format "{{.ID}}" --filter reference="$tmpImgName"`;'
-        \ . ' if [ -z "$tmp" ]; then'
-        \ .   ' echo -n "找不到 \"$tmpImgName\" 的 docker 容器";'
-        \ .   ' exit 1;'
-        \ . ' fi'
-    let l:rtnMsg = system(l:cmdTxt)
-    if v:shell_error
-        throw l:rtnMsg
+" 檢查使用的執行文件並返回執行文件目錄路徑
+function! s:checkShFileDirectory(projectDir, assignShFileDirArgu)
+    if a:assignShFileDirArgu == ''
+        let l:shFileDir = a:projectDir
+    elseif a:assignShFileDirArgu == 'global'
+        let l:shFileDir = s:getVar('globalDirectory')
+    else
+        let l:shFileDir = a:assignShFileDirArgu
     endif
+
+    let l:shFile = l:shFileDir . '/' . s:shFilePathPart
+    if empty(findfile(l:shFile))
+        throw '找不到 "' . l:shFile . '" 執行文件。'
+    endif
+    return l:shFileDir
+endfunction
+
+" docker 命令替換
+function s:replaceDockerCmd(shFileDir, projectDir, shCmd)
+    let l:volumeProjectTxt =   '--volume "' . a:projectDir   . ':' . a:projectDir . '"'
+    if a:shFileDir == a:projectDir
+        let volumeTxt = l:volumeProjectTxt
+    else
+        let l:shFileParentDir = a:shFileDir . '/' . s:shFileParentPathPart
+        let l:volumeShFileTxt
+            \ = '--volume "' . l:shFileParentDir . ':' . l:shFileParentDir . '"'
+        if len(split(a:shFileDir, '/*')) >= len(split(a:projectDir, '/*'))
+            " 路徑層數較少或重要目錄者擺後面
+            let volumeTxt = l:volumeShFileTxt . ' ' . l:volumeProjectTxt
+        else
+            let volumeTxt = l:volumeProjectTxt . ' ' . l:volumeShFileTxt
+        endif
+    endif
+
+    let l:cmdTxt = s:getVar('dockerCommand')
+    let l:cmdTxt = substitute(l:cmdTxt, '{volume}', l:volumeTxt, 'g')
+    let l:cmdTxt = substitute(l:cmdTxt, '{shCmd}', a:shCmd, 'g')
+    return l:cmdTxt
 endfunction
 
 " 取得運行命令程式碼
-" @param {Number} ynUseDocker - 0 or 1。
-function! s:getRunCmdTxt(ynUseDocker, shFile, method, fileAbsolutePath, fileExt, mainDirectory)
-    let l:safeMainDirectory = s:safeQuote(a:mainDirectory)
+function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir, shFileDir)
+    let l:ynUseDocker = !(a:machine != 'docker')
+    let l:shFile = a:shFileDir . '/' . s:shFilePathPart
 
-    let l:cmdTxt = 'sh "' . s:safeQuote(a:shFile) . '"'
-        \ . ' "' . s:safeQuote(a:method) . '"'
-        \ . ' "' . s:safeQuote(a:fileAbsolutePath) . '"'
-        \ . ' ".' . s:safeQuote(a:fileExt) . '"'
-        \ . ' "' . l:safeMainDirectory . '"'
-        \ . ' "' . (a:ynUseDocker ? 'inDocker' : 'unDocker') . '"'
+    let l:cmdTxt = canUtils#GetCmdTxt('sh', l:shFile,
+        \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : '.' . a:fileExt),
+        \ a:projectDir, (l:ynUseDocker ? 'inDocker' : 'unDocker'))
 
-    if a:ynUseDocker
-        let l:execDocker = 'docker run --rm'
-            \ . ' --volume "' . l:safeMainDirectory . ':' . l:safeMainDirectory . '"'
-            \ . ' ' . g:cmdbyu_dockerCarryOption
-            \ . ' ' . s:containerName
-        let l:cmdTxt = l:execDocker . ' ' . l:cmdTxt
+    if l:ynUseDocker
+        let l:cmdTxt = s:replaceDockerCmd(a:shFileDir, a:projectDir, l:cmdTxt)
     endif
 
     return l:cmdTxt
@@ -92,34 +91,31 @@ function! cmdByU#ShowMsg(cmdTxt)
     let &makeprg = a:cmdTxt
     make
     copen
+    if line('$') == 1 && getline(1) == ''
+        cclose
+    else
+        " 單引號無效果
+        exec "normal! \<CR>"
+    endif
 endfunction
 
 
 " 執行命令
 " machine != docker 都視為以容器執行
-function! s:run(method, fileAbsolutePath, fileExt, machine, assignShFile)
-    let l:mainDirectory = s:checkMainDirectory(a:fileAbsolutePath)
-    let l:ynUseDocker = !(a:machine != 'docker')
-    if a:assignShFile == ''
-        let l:shFile = l:mainDirectory . '/' . s:shFilePathPart
-    else
-        if a:assignShFile == 'global'
-            let l:shFile = g:cmdbyu_globalShFilePath
-        else
-            let l:shFile = a:assignShFile
-        endif
-        if findfile(a:assignShFile) == ''
-            throw '找不到 "' . l:shFile . '" 的 cmdByU.vim 執行文件。'
-        endif
-    endif
+function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
+    let l:projectDir = s:checkProjectDirectory(a:fileAbsolutePath)
+    let l:shFileDir = s:checkShFileDirectory(l:projectDir, a:assignShFileDirArgu)
+    let l:cmdTxt = s:getRunCmdTxt(
+        \ a:machine, a:method, a:fileAbsolutePath, a:fileExt,
+        \ l:projectDir, l:shFileDir)
 
-    let l:cmdTxt = s:getRunCmdTxt(l:ynUseDocker, l:shFile,
-        \ a:method, a:fileAbsolutePath, a:fileExt, l:mainDirectory)
-
-    if a:method =~# '^format\([A-Z].*\)\?$'
+    " 執行命令的訊息
+    echom l:cmdTxt
+    return
+    if a:method =~# '^format.*'
         " 執行格式化命令
         call cmdByU#Overwrite(l:cmdTxt)
-    elseif a:method =~# '^syntax\([A-Z].*\)\?$'
+    elseif a:method =~# '^syntax.*'
         " 執行檢查語法命令
         call cmdByU#ShowMsg(l:cmdTxt)
     else
@@ -129,14 +125,13 @@ endfunction
 
 " 容器執行命令
 function! cmdByU#Run(method, ...)
-    let l:assignShFile = get(a:, 1, '')
-    call s:checkContainer()
-    call s:run(a:method, expand('%:p'), expand('%:e'), 'docker', l:assignShFile)
+    let l:assignShFileDir = get(a:, 1, '')
+    call s:run(expand('%:p'), expand('%:e'), 'docker', a:method, l:assignShFileDir)
 endfunction
 
 " 主機執行命令
 function! cmdByU#HostRun(method, ...)
-    let l:assignShFile = get(a:, 1, '')
-    call s:run(a:method, expand('%:p'), expand('%:e'), 'host', l:assignShFile)
+    let l:assignShFileDir = get(a:, 1, '')
+    call s:run(expand('%:p'), expand('%:e'), 'host', a:method, l:assignShFileDir)
 endfunction
 
