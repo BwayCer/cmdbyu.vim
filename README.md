@@ -61,7 +61,7 @@ let g:cmdbyu_globalDirectory = fnamemodify('~', ':p')
 並帶入相關參數運行其文件：
 
 ```
-sh <專案目錄路徑>/.vimcode/cmdbyu.sh <方法 (format|syntax|*)> \
+sh <專案目錄路徑>/.vimcode/cmdbyu.sh <方法 (syntax|*)> \
     <當前文件路徑> <當前文件副檔名> <專案目錄路徑> \
     <使用容器資訊 (inDocker|unDocker)>
 ```
