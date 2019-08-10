@@ -7,7 +7,7 @@
 下的任意文件路徑，
 並嘗試以下命令：
 
- 命令                            | 方法參數                                                        | \[執行文件參數\]
-:----:                           |:--------:                                                       |:------------
-`CmdByURun`<br />`CmdByUHostRun` | `format`<br />`syntax`<br />`syntaxEmpty`<br />`run`<br />`dev` | `golbal`<br />`path/to/runShDir`
+ 命令                            | 方法參數                                           | \[執行文件參數\]
+:----:                           |:--------:                                          |:------------
+`CmdByURun`<br />`CmdByUHostRun` | `syntax`<br />`syntaxSimple`<br />`run`<br />`dev` | `golbal`<br />`path/to/runShDir`
 
