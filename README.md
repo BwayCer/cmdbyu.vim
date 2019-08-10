@@ -39,10 +39,9 @@ let g:cmdbyu_dockerCommand
     \ . ' --network host local/vimcmdbyu -- {shCmd}'
 ```
 
-關於方法名稱可自由取名，唯獨用以下二者為前綴時較為特殊：
-
-  * `format`: 將標準輸出覆寫到文件上。
-  * `syntax`: 將標準輸出顯示於 quickfix-window 窗格。
+關於方法名稱可自由取名，
+唯獨以 `syntax` 為前綴時較為特殊，
+其會觸發**覆寫文件**及**quickfix 窗格顯示資訊**的功能。
 
 第二項參數可指定執行文件目錄來變更執行文件的所在路徑，
 其目錄必須包含 `.vimcode/cmdbyu.sh` 文件，
