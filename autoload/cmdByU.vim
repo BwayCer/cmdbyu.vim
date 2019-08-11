@@ -87,7 +87,7 @@ endfunction
 
 
 " 程式碼自動化檢查
-function! s:run_syntax(chanFormatPath, chanSyntaxPath, name)
+function! s:run_syntax(chanFormatPath, chanSyntaxPath, info)
     " 格式化，覆寫文件
     if !empty(findfile(a:chanFormatPath))
         let l:currLine = line('.')
@@ -107,7 +107,11 @@ function! s:run_syntax(chanFormatPath, chanSyntaxPath, name)
         let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
         make
         copen
-        let w:quickfix_title = a:name
+        let w:quickfix_title = 'CmdByU ' . a:info.machine
+            \ . (empty(a:info.assignShFileDir) ? ' project' : ' ' . a:info.assignShFileDir)
+            \ . ' ' . a:info.method
+            \ . ' ' . substitute(a:info.fileAbsolutePath,
+                \ fnamemodify(a:info.projectDir, ':h') . '/', '', '')
         " 單引號無效果
         exec "normal! \<CR>"
     else
@@ -142,8 +146,10 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
 
     " 讀取返回訊息並恢復溝通環境
     if a:method =~# '^syntax'
-        let l:quickfixName = 'CmdByU ' . a:machine . ' ' . a:method . ' ' . a:assignShFileDirArgu
-        call s:run_syntax(l:chanFormatPath, l:chanSyntaxPath, l:quickfixName)
+        let l:info = {'fileAbsolutePath': a:fileAbsolutePath, 'machine': a:machine,
+            \ 'method': a:method, 'projectDir': l:projectDir,
+            \ 'assignShFileDir': a:assignShFileDirArgu}
+        call s:run_syntax(l:chanFormatPath, l:chanSyntaxPath, l:info)
     endif
     call canUtils#Sh('sh', s:cleanChannelFilePath,
         \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
