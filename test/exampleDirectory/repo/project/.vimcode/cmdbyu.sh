@@ -21,10 +21,10 @@ projectDir="$4"
 vimcodeDir="$5"
 useDockerMsg="$6"
 
-# 溝通用文件
-chanBufferContentPath="$vimcodeDir/bufferContent.chan.tmp"
-chanFormatCodePath="$vimcodeDir/format.chan.tmp"
-chanSyntaxInfoPath="$vimcodeDir/syntax.chan.tmp"
+# 約定通訊文件
+chanBufferContentPath="$vimcodeDir/chanBufferContent.cmdbyu.tmp"
+chanFormatCodePath="$vimcodeDir/chanFormat.cmdbyu.tmp"
+chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 
 
 ##shStyle 介面函式
