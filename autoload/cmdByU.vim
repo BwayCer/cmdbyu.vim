@@ -11,9 +11,10 @@ let s:cleanChannelFilePath   = s:_dirvi . '/lib/cleanChannel.sh'
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
 let s:shFileParentPathPart = fnamemodify(s:shFilePathPart, ':h')
-let s:tmpBufferContentPathPart = s:shFileParentPathPart . '/bufferContent.chan.tmp'
-let s:tmpFormatCodePathPart = s:shFileParentPathPart . '/format.chan.tmp'
-let s:tmpSyntaxInfoPathPart = s:shFileParentPathPart . '/syntax.chan.tmp'
+" 約定通訊文件
+let s:chanBufferContentPathPart = s:shFileParentPathPart . '/chanBufferContent.cmdbyu.tmp'
+let s:chanFormatPathPart = s:shFileParentPathPart . '/chanFormat.cmdbyu.tmp'
+let s:chanSyntaxPathPart = s:shFileParentPathPart . '/chanSyntax.cmdbyu.tmp'
 
 
 " 檢查執行文件是否存在，若存在則返回專案目錄路徑
@@ -85,26 +86,38 @@ function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir,
 endfunction
 
 
-" 將標準輸出覆寫到文件上
-function! cmdByU#Overwrite(cmdTxt)
-    let &formatprg = a:cmdTxt
-    normal! ggVGgq
-endfunction
+" 程式碼自動化檢查
+function! s:run_syntax(chanFormatPath, chanSyntaxPath, info)
+    " 格式化，覆寫文件
+    if !empty(findfile(a:chanFormatPath))
+        let l:currLine = line('.')
+        let l:currCol = virtcol('.') - 1
 
-" 將標準輸出顯示於 quickfix-window 窗格
-function! cmdByU#ShowMsg(cmdTxt, ...)
-    let l:name = get(a:, 1)
+        let &formatprg = canUtils#GetCmdTxt('cat', a:chanFormatPath)
+        normal! ggVGgq
 
-    " 使用預設給定名稱
-    let w:quickfix_title = ''
-    let &makeprg = a:cmdTxt
-    make
-    copen
-    if !empty(l:name)
-        let w:quickfix_title = l:name
+        " 移動到格式化前的位置
+        exec 'normal! ' . l:currLine . 'gg0' . l:currCol . 'l'
     endif
-    " 單引號無效果
-    exec "normal! \<CR>"
+
+    " 檢查語法，將訊息顯示於 quickfix-window 窗格
+    if getfsize(a:chanSyntaxPath) > 0
+        " 使用預設給定名稱
+        let w:quickfix_title = ''
+        let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
+        make
+        copen
+        let w:quickfix_title = 'CmdByU ' . a:info.machine
+            \ . (empty(a:info.assignShFileDir) ? ' project' : ' ' . a:info.assignShFileDir)
+            \ . ' ' . a:info.method
+            \ . ' ' . substitute(a:info.fileAbsolutePath,
+                \ fnamemodify(a:info.projectDir, ':h') . '/', '', '')
+        " 單引號無效果
+        exec "normal! \<CR>"
+    else
+        " 可能有已開啟的 quickfix-window 窗格
+        cclose
+    endif
 endfunction
 
 
@@ -117,15 +130,15 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
         \ a:machine, a:method, a:fileAbsolutePath, a:fileExt,
         \ l:projectDir, l:shFileDir)
 
-    let l:tmpBufferContentPath = l:shFileDir . '/' . s:tmpBufferContentPathPart
-    let l:tmpFormatCodePath = l:shFileDir . '/' . s:tmpFormatCodePathPart
-    let l:tmpSyntaxInfoPath = l:shFileDir . '/' . s:tmpSyntaxInfoPathPart
+    let l:chanBufContentPath = l:shFileDir . '/' . s:chanBufferContentPathPart
+    let l:chanFormatPath = l:shFileDir . '/' . s:chanFormatPathPart
+    let l:chanSyntaxPath = l:shFileDir . '/' . s:chanSyntaxPathPart
 
     " 建立溝通用的文件環境
     call canUtils#Sh('sh', s:cleanChannelFilePath,
-        \ l:tmpBufferContentPath, l:tmpFormatCodePath, l:tmpSyntaxInfoPath)
+        \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
     " 不用 \"\" 包覆沒關係，會被以空白格寫入
-    exec 'write! ' . l:tmpBufferContentPath
+    exec 'write! ' . l:chanBufContentPath
 
     " 執行命令
     echom l:cmdTxt
@@ -133,21 +146,13 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
 
     " 讀取返回訊息並恢復溝通環境
     if a:method =~# '^syntax'
-        " 格式化
-        if !empty(findfile(l:tmpFormatCodePath))
-            call cmdByU#Overwrite(canUtils#GetCmdTxt('cat', l:tmpFormatCodePath))
-        endif
-        " 檢查語法
-        if getfsize(l:tmpSyntaxInfoPath) > 0
-            call cmdByU#ShowMsg(canUtils#GetCmdTxt('cat', l:tmpSyntaxInfoPath),
-                \ 'CmdByU ' . a:machine . ' ' . a:method . ' ' . a:assignShFileDirArgu)
-        else
-            " 可能有已開啟的 quickfix-window 窗格
-            cclose
-        endif
+        let l:info = {'fileAbsolutePath': a:fileAbsolutePath, 'machine': a:machine,
+            \ 'method': a:method, 'projectDir': l:projectDir,
+            \ 'assignShFileDir': a:assignShFileDirArgu}
+        call s:run_syntax(l:chanFormatPath, l:chanSyntaxPath, l:info)
     endif
     call canUtils#Sh('sh', s:cleanChannelFilePath,
-        \ l:tmpBufferContentPath, l:tmpFormatCodePath, l:tmpSyntaxInfoPath)
+        \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
 endfunction
 
 " 容器執行命令
