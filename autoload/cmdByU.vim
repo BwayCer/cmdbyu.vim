@@ -86,26 +86,34 @@ function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir,
 endfunction
 
 
-" 將標準輸出覆寫到文件上
-function! cmdByU#Overwrite(cmdTxt)
-    let &formatprg = a:cmdTxt
-    normal! ggVGgq
-endfunction
+" 程式碼自動化檢查
+function! s:run_syntax(chanFormatPath, chanSyntaxPath, name)
+    " 格式化，覆寫文件
+    if !empty(findfile(a:chanFormatPath))
+        let l:currLine = line('.')
+        let l:currCol = virtcol('.') - 1
 
-" 將標準輸出顯示於 quickfix-window 窗格
-function! cmdByU#ShowMsg(cmdTxt, ...)
-    let l:name = get(a:, 1)
+        let &formatprg = canUtils#GetCmdTxt('cat', a:chanFormatPath)
+        normal! ggVGgq
 
-    " 使用預設給定名稱
-    let w:quickfix_title = ''
-    let &makeprg = a:cmdTxt
-    make
-    copen
-    if !empty(l:name)
-        let w:quickfix_title = l:name
+        " 移動到格式化前的位置
+        exec 'normal! ' . l:currLine . 'gg0' . l:currCol . 'l'
     endif
-    " 單引號無效果
-    exec "normal! \<CR>"
+
+    " 檢查語法，將訊息顯示於 quickfix-window 窗格
+    if getfsize(a:chanSyntaxPath) > 0
+        " 使用預設給定名稱
+        let w:quickfix_title = ''
+        let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
+        make
+        copen
+        let w:quickfix_title = a:name
+        " 單引號無效果
+        exec "normal! \<CR>"
+    else
+        " 可能有已開啟的 quickfix-window 窗格
+        cclose
+    endif
 endfunction
 
 
@@ -134,18 +142,8 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
 
     " 讀取返回訊息並恢復溝通環境
     if a:method =~# '^syntax'
-        " 格式化
-        if !empty(findfile(l:chanFormatPath))
-            call cmdByU#Overwrite(canUtils#GetCmdTxt('cat', l:chanFormatPath))
-        endif
-        " 檢查語法
-        if getfsize(l:chanSyntaxPath) > 0
-            call cmdByU#ShowMsg(canUtils#GetCmdTxt('cat', l:chanSyntaxPath),
-                \ 'CmdByU ' . a:machine . ' ' . a:method . ' ' . a:assignShFileDirArgu)
-        else
-            " 可能有已開啟的 quickfix-window 窗格
-            cclose
-        endif
+        let l:quickfixName = 'CmdByU ' . a:machine . ' ' . a:method . ' ' . a:assignShFileDirArgu
+        call s:run_syntax(l:chanFormatPath, l:chanSyntaxPath, l:quickfixName)
     endif
     call canUtils#Sh('sh', s:cleanChannelFilePath,
         \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
