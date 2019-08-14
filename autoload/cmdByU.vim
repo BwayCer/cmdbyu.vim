@@ -109,6 +109,9 @@ function! s:run_syntax(chanFormatPath, chanSyntaxPath, info)
     if getfsize(a:chanSyntaxPath) > 0
         " 使用預設給定名稱
         let w:quickfix_title = ''
+        let &errorformat
+            \ =  '%f:%l:%c:%t:%m'
+            \ . ',%f:%l:%c::%m'
         let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
         make
         copen

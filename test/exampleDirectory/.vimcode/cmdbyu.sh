@@ -73,9 +73,9 @@ fnMain_syntaxGrep() {
 fnMain_syntaxSimple() {
     local randIndex=`awk -F "" '{print $1":"($2$3)%88+1}' <<< "$RANDOM"`
     printf "$filePath:%s\n" \
-        "$randIndex: 不看立場，只論是非，改變總在跳脫舒適圈之後" \
-        "3:13: 生活融於政治，言行落實律法" \
-        "5:15: 信仰雖有價值，但是沒人買得起" \
+        "$randIndex::不看立場，只論是非，改變總在跳脫舒適圈之後" \
+        "3:13:W:生活融於政治，言行落實律法" \
+        "5:15:E:信仰雖有價值，但是沒人買得起" \
         > "$chanSyntaxInfoPath"
 }
 fnMain_carryArgs() {
@@ -125,7 +125,7 @@ fnQuickfixGrepProcess() {
     local awkExpr="{tPrefix=\"$fileName:\"\$1; tKW=\"$keyword\"}"
     local awkExpr+='$1="";'
     local awkExpr+="{tn=substr(\$0,2)}"
-    local awkExpr+='{print tPrefix ":" index(tn,tKW) ":" tn}'
+    local awkExpr+='{print tPrefix ":" index(tn,tKW) "::" tn}'
 
     awk -F ':' "$awkExpr" <<< "$grepResult"
 }
