@@ -66,7 +66,7 @@ fnMain_syntaxGrep() {
             grep "..." | sort | uniq -c | sort -rn | head -n 1 |
             sed -e "s/^ *[0-9]* \(.*\)/\1/"
     `
-    grep -sn "\<$keyword\>" $chanBufferContentPath |
+    cat "$chanBufferContentPath" |
         fnQuickfixGrep "$filePath" "$keyword" \
         > "$chanSyntaxInfoPath"
 }
