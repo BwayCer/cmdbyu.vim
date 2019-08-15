@@ -1,0 +1,11 @@
+{
+  "name": "eslint.js",
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "npx eslint code*.js",
+    "lintFormat": "npx eslint --format compact code*.js"
+  },
+  "devDependencies": {
+    "eslint": "*"
+  }
+}

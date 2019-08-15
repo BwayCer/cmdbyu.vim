@@ -1,0 +1,18 @@
+env:
+  browser: true
+  commonjs: true
+  es6: true
+  node: true
+extends: 'eslint:recommended'
+parserOptions:
+  sourceType: module
+rules:
+  #> https://eslint.org/docs/rules/no-console
+  # 不允許使用 console
+  no-console:
+    - warn
+  #> https://eslint.org/docs/rules/quotes
+  # 強制使用單引號
+  quotes:
+    - error
+    - single
