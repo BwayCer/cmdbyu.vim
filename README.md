@@ -70,3 +70,10 @@ sh <專案目錄路徑>/.vimcode/cmdbyu.sh <方法 (syntax|*)> \
 [`./test/exampleDirectory/.vimcode/cmdbyu.sh`](./test/exampleDirectory/.vimcode/cmdbyu.sh)
 文件。
 
+
+
+## 句法工具
+
+
+見 [./test/syntaxTool/](./test/syntaxTool/) 。
+
