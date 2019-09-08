@@ -80,7 +80,7 @@ function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir,
     let l:shFileParentDir = a:shFileDir . '/' . s:shFileParentPathPart
 
     let l:cmdTxt = canUtils#GetCmdTxt('sh', l:shFile,
-        \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : '.' . a:fileExt),
+        \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : a:fileExt),
         \ a:projectDir, l:shFileParentDir, (l:ynUseDocker ? 'inDocker' : 'unDocker'))
 
     if l:ynUseDocker
