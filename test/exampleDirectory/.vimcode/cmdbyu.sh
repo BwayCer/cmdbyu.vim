@@ -4,11 +4,12 @@
 # # 參數說明：
 # #   * 方法
 # #     * syntax         觸發格式化和提示訊息功能。
+# #     * syntaxRun      運行該文件或專案。
+# #     * syntaxDev      開發模式下運行該文件或專案。
 # #     * syntaxGrep     查找使用字詞最多的單字。
 # #     * syntaxSimple   最簡單的 Quickfix 使用方式。你做得到嗎？
-# #     * run            運行該文件或專案。
-# #     * dev            開發模式下運行該文件或專案。
-# [[USAGE]] <方法 (syntax|syntaxGrep|syntaxSimple|run|dev)>
+# #     * hello          運行該文件或專案。
+# [[USAGE]] <方法 (syntax|syntaxRun|syntaxDev|syntaxGrep|syntaxSimple|hello)>
 #           <文件路徑> <文件副檔名> <專案目錄路徑> <執行文件目錄路徑>
 #           <使用容器資訊 (inDocker|unDocker)>
 
@@ -69,6 +70,13 @@ fnMain_syntax() {
         sed -e "s/[^:]*<title>\(.*\)<\/title>.*/\1/" \
         > "$chanSyntaxInfoPath"
 }
+fnMain_syntaxRun() {
+    fnCarryArgs "$@"
+}
+fnMain_syntaxDev() {
+    fnCarryArgs "$@"
+    exit 1
+}
 fnMain_syntaxGrep() {
     local keyword=`
         sed "s/\W/\n/g" "$chanBufferContentPath" |
@@ -88,12 +96,8 @@ fnMain_syntaxSimple() {
         "5:15:E:信仰雖有價值，但是沒人買得起" \
         > "$chanSyntaxInfoPath"
 }
-fnMain_run() {
-    fnCarryArgs "$@"
-}
-fnMain_dev() {
-    fnCarryArgs "$@"
-    exit 1
+fnMain_hello() {
+    echo hello
 }
 
 

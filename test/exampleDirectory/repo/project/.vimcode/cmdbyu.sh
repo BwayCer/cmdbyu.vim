@@ -3,10 +3,10 @@
 
 # # 參數說明：
 # #   * 方法
-# #     * syntax   觸發格式化和提示訊息功能。
-# #     * run      運行該文件或專案。
-# #     * dev      開發模式下運行該文件或專案。
-# [[USAGE]] <方法 (syntax|run|dev)>
+# #     * syntax      觸發格式化和提示訊息功能。
+# #     * syntaxRun   運行該文件或專案。
+# #     * syntaxDev   開發模式下運行該文件或專案。
+# [[USAGE]] <方法 (syntax|syntaxRun|syntaxDev)>
 #           <文件路徑> <文件副檔名> <專案目錄路徑> <執行文件目錄路徑>
 #           <使用容器資訊 (inDocker|unDocker)>
 
@@ -69,10 +69,10 @@ fnMain_syntax() {
         "5:15:E:Ունի զարգացման երեք ձև։ Առաջինը Պիչուն է, իսկ երրորդ ձևը Ռաիչուն։" \
         > "$chanSyntaxInfoPath"
 }
-fnMain_run() {
+fnMain_syntaxRun() {
     fnCarryArgs "$@"
 }
-fnMain_dev() {
+fnMain_syntaxDev() {
     fnCarryArgs "$@"
     exit 1
 }
