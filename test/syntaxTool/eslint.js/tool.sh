@@ -2,10 +2,7 @@
 fnMain_syntax() {
     case "$fileExt" in
         js | vue )
-            # 如果 cd "$projectDir" 會出現以下錯誤
-            # warning  File ignored because of a matching ignore pattern.
-            # Use "--no-ignore" to override
-            cd "$projectDir/eslint.js"
+            cd "$projectDir"
 
             local sameExtFilePath="$filePath.cmdbyu.$fileExt"
             cat "$chanBufferContentPath" > "$sameExtFilePath"
