@@ -24,6 +24,10 @@ chanBufferContentPath="$vimcodeDir/chanBufferContent.cmdbyu.tmp"
 chanFormatCodePath="$vimcodeDir/chanFormat.cmdbyu.tmp"
 chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 
+# 暫存文件空間
+sameFilePath="$filePath.cmdbyu.$fileExt"
+stdoutTmpPath="$filePath.stdout.cmdbyu.tmp"
+
 
 ##shStyle 介面函式
 
@@ -31,11 +35,18 @@ chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 fnMain() {
     local execFnName="fnMain_$method"
     if type "$execFnName" &> /dev/null ; then
+        local tmpRtnCode
         local timerStart_idCmdbyu=`date -u +"%M%S%3N"`
 
         cd "$projectDir"
         "$execFnName"
-        if [ $? -ne 0 ]; then
+        tmpRtnCode=$?
+
+        # 復原環境
+        [ ! -f "$sameFilePath"  ] || rm "$sameFilePath"
+        [ ! -f "$stdoutTmpPath" ] || rm "$stdoutTmpPath"
+
+        if [ $tmpRtnCode -ne 0 ]; then
             echo "\"$method\" 方法無法處理 \"$fileExt\" 副檔名。"
             exit 1
         fi
