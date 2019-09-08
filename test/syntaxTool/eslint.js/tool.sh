@@ -2,24 +2,29 @@
 fnMain_syntax() {
     case "$fileExt" in
         js | vue )
-            cd "$projectDir"
+            local tmpRtnCode regexTxt
 
-            local sameExtFilePath="$filePath.cmdbyu.$fileExt"
-            cat "$chanBufferContentPath" > "$sameExtFilePath"
+            cat "$chanBufferContentPath" > "$sameFilePath"
 
-            local regexTxt="^.*: line \([0-9]\+\), col \([0-9]\+\), \(E\|W\)\(rror\|arning\) - \(.\+\)"
-            npx eslint --fix --format "compact" "$sameExtFilePath" |
-                grep "$regexTxt" |
-                sed "s/$regexTxt/\1:\2:\3:\5/" |
-                awk "{tFN=\"$filePath\"}"'{print tFN":"$0}' \
-                1> "$chanSyntaxInfoPath"
+            # 命令執行
+            npx eslint --fix --format "compact" "$sameFilePath" |
+                tee "$stdoutTmpPath"
+            tmpRtnCode=${PIPESTATUS[0]}
 
-            mv "$sameExtFilePath" "$chanFormatCodePath"
+            # 命令處理
+            regexTxt+="^.*: line \([0-9]\+\), col \([0-9]\+\),"
+            regexTxt+=" \(E\|W\)\(rror\|arning\) - \(.\+\)"
+            if [ $tmpRtnCode -eq 0 ]; then
+                mv "$sameFilePath" "$chanFormatCodePath"
+
+                cat "$stdoutTmpPath" |
+                    grep "$regexTxt" |
+                    sed "s/$regexTxt/\1:\2:\3:\5/" |
+                    awk "{print \"$filePath:\"\$0}" \
+                    > "$chanSyntaxInfoPath"
+            fi
             ;;
-        * )
-            echo "\"$method\" 方法無法處理 \"$fileExt\" 副檔名。"
-            exit 1
-            ;;
+        * ) return 1 ;;
     esac
 }
 
