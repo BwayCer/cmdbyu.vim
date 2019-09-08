@@ -115,11 +115,17 @@ function! s:run_syntax(chanFormatPath, chanSyntaxPath, info)
         let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
         make
         copen
+
         let w:quickfix_title = 'CmdByU ' . a:info.machine
             \ . (empty(a:info.assignShFileDir) ? ' project' : ' ' . a:info.assignShFileDir)
             \ . ' ' . a:info.method
             \ . ' ' . substitute(a:info.fileAbsolutePath,
                 \ fnamemodify(a:info.projectDir, ':h') . '/', '', '')
+
+        let l:heightSize = line("$")
+        let l:heightSize = l:heightSize < 8 ? l:heightSize + 1 : 9
+        exec 'resize ' . l:heightSize
+
         " 單引號無效果
         exec "normal! \<CR>"
     else
