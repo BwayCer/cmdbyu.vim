@@ -31,33 +31,46 @@ chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 
 
 fnMain() {
-    case "$method" in
-        syntax )
-            printf "stamp: %s\n\nHI %s\n" \
-                "`date -u +"%Y-%m-%dT%H:%M:%S.%9NZ"`" \
-                "`whoami`" \
-                > "$chanFormatCodePath"
-
-            printf "$filePath:%s\n" \
-                "1:11::พิคาชูเป็นสายพันธุ์ของโปเกมอน" \
-                "3:13:W:woring: Пикачу считается одним из самых узнаваемых и популярных покемонов" \
-                "5:15:E:Ունի զարգացման երեք ձև։ Առաջինը Պիչուն է, իսկ երրորդ ձևը Ռաիչուն։" \
-                > "$chanSyntaxInfoPath"
-            ;;
-        run )
-            fnMain_carryArgs "$@"
-            ;;
-        dev )
-            fnMain_carryArgs "$@"
+    local execFnName="fnMain_$method"
+    if type "$execFnName" &> /dev/null ; then
+        cd "$projectDir"
+        # "$execFnName"
+        # "$@" 以存於共享變數中，此處只為示範使用。
+        "$execFnName" "$@"
+        if [ $? -ne 0 ]; then
+            echo "\"$method\" 方法無法處理 \"$fileExt\" 副檔名。"
             exit 1
-            ;;
-        * )
-            echo "找不到 \"$method\" 方法。"
-            exit 1
-            ;;
-    esac
+        fi
+    else
+        echo "找不到 \"$method\" 方法。"
+        exit 1
+    fi
 }
-fnMain_carryArgs() {
+fnMain_syntax() {
+    printf "stamp: %s\n\nHI %s\n" \
+        "`date -u +"%Y-%m-%dT%H:%M:%S.%9NZ"`" \
+        "`whoami`" \
+        > "$chanFormatCodePath"
+
+    printf "$filePath:%s\n" \
+        "1:11::พิคาชูเป็นสายพันธุ์ของโปเกมอน" \
+        "3:13:W:woring: Пикачу считается одним из самых узнаваемых и популярных покемонов" \
+        "5:15:E:Ունի զարգացման երեք ձև։ Առաջինը Պիչուն է, իսկ երրորդ ձևը Ռաիչուն։" \
+        > "$chanSyntaxInfoPath"
+}
+fnMain_run() {
+    fnCarryArgs "$@"
+}
+fnMain_dev() {
+    fnCarryArgs "$@"
+    exit 1
+}
+
+
+##shStyle 函式庫
+
+
+fnCarryArgs() {
     printf "PWD: %s\nfile: %s\n" "$PWD" "`realpath "$0"`"
     printf "CmdByU: (%s)" "$#"
     printf " %s," "$@"

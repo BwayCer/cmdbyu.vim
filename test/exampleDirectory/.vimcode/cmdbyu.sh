@@ -33,22 +33,20 @@ chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 
 
 fnMain() {
-    case "$method" in
-        syntax | syntaxGrep | syntaxSimple )
-            "fnMain_$method"
-            ;;
-        run )
-            fnMain_carryArgs "$@"
-            ;;
-        dev )
-            fnMain_carryArgs "$@"
+    local execFnName="fnMain_$method"
+    if type "$execFnName" &> /dev/null ; then
+        cd "$projectDir"
+        # "$execFnName"
+        # "$@" 以存於共享變數中，此處只為示範使用。
+        "$execFnName" "$@"
+        if [ $? -ne 0 ]; then
+            echo "\"$method\" 方法無法處理 \"$fileExt\" 副檔名。"
             exit 1
-            ;;
-        * )
-            echo "找不到 \"$method\" 方法。"
-            exit 1
-            ;;
-    esac
+        fi
+    else
+        echo "找不到 \"$method\" 方法。"
+        exit 1
+    fi
 }
 fnMain_syntax() {
     local googleTrendsUrl="https://trends.google.com.tw/trends/trendingsearches/daily/rss?geo=TW"
@@ -66,6 +64,7 @@ fnMain_syntaxGrep() {
             grep "..." | sort | uniq -c | sort -rn | head -n 1 |
             sed -e "s/^ *[0-9]* \(.*\)/\1/"
     `
+    echo "使用最多的字詞是 \"$keyword\""
     cat "$chanBufferContentPath" |
         fnQuickfixGrep "$filePath" "$keyword" \
         > "$chanSyntaxInfoPath"
@@ -78,7 +77,19 @@ fnMain_syntaxSimple() {
         "5:15:E:信仰雖有價值，但是沒人買得起" \
         > "$chanSyntaxInfoPath"
 }
-fnMain_carryArgs() {
+fnMain_run() {
+    fnCarryArgs "$@"
+}
+fnMain_dev() {
+    fnCarryArgs "$@"
+    exit 1
+}
+
+
+##shStyle 函式庫
+
+
+fnCarryArgs() {
     printf "PWD: %s\nfile: %s\n" "$PWD" "`realpath "$0"`"
     printf "CmdByU: (%s)" "$#"
     printf " %s," "$@"
@@ -86,10 +97,6 @@ fnMain_carryArgs() {
     printf "method: %s\nfPat: %s\nfExt: %s\npjDir: %s\nvcDir: %s\nuseDockerMsg: %s\n" \
         "$1" "$2" "$3" "$4" "$5" "$6"
 }
-
-
-##shStyle 函式庫
-
 
 # 顯示 Quickfix 規範的格式
 fnQuickfixGrep() {
