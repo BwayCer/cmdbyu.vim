@@ -4,7 +4,7 @@
 
 > 授權： [CC-BY-4.0](./LICENSE.md)
 
-> 版本： v1.1.1
+> 版本： v1.2.2
 
 讓 Vim 可依目錄區分來簡易設定所欲執行的命令。
 
@@ -69,4 +69,11 @@ sh <專案目錄路徑>/.vimcode/cmdbyu.sh <方法 (syntax|*)> \
 關於執行文件可參考
 [`./test/exampleDirectory/.vimcode/cmdbyu.sh`](./test/exampleDirectory/.vimcode/cmdbyu.sh)
 文件。
+
+
+
+## 句法工具
+
+
+見 [./test/syntaxTool/](./test/syntaxTool/) 。
 

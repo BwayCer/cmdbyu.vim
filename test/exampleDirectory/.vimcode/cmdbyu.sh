@@ -4,11 +4,12 @@
 # # 參數說明：
 # #   * 方法
 # #     * syntax         觸發格式化和提示訊息功能。
+# #     * syntaxRun      運行該文件或專案。
+# #     * syntaxDev      開發模式下運行該文件或專案。
 # #     * syntaxGrep     查找使用字詞最多的單字。
 # #     * syntaxSimple   最簡單的 Quickfix 使用方式。你做得到嗎？
-# #     * run            運行該文件或專案。
-# #     * dev            開發模式下運行該文件或專案。
-# [[USAGE]] <方法 (syntax|syntaxGrep|syntaxSimple|run|dev)>
+# #     * hello          運行該文件或專案。
+# [[USAGE]] <方法 (syntax|syntaxRun|syntaxDev|syntaxGrep|syntaxSimple|hello)>
 #           <文件路徑> <文件副檔名> <專案目錄路徑> <執行文件目錄路徑>
 #           <使用容器資訊 (inDocker|unDocker)>
 
@@ -28,27 +29,36 @@ chanBufferContentPath="$vimcodeDir/chanBufferContent.cmdbyu.tmp"
 chanFormatCodePath="$vimcodeDir/chanFormat.cmdbyu.tmp"
 chanSyntaxInfoPath="$vimcodeDir/chanSyntax.cmdbyu.tmp"
 
+# 暫存文件空間
+sameFilePath="$filePath.cmdbyu.$fileExt"
+stdoutTmpPath="$filePath.stdout.cmdbyu.tmp"
+
 
 ##shStyle 介面函式
 
 
 fnMain() {
-    case "$method" in
-        syntax | syntaxGrep | syntaxSimple )
-            "fnMain_$method"
-            ;;
-        run )
-            fnMain_carryArgs "$@"
-            ;;
-        dev )
-            fnMain_carryArgs "$@"
+    local execFnName="fnMain_$method"
+    if type "$execFnName" &> /dev/null ; then
+        local tmpRtnCode
+        cd "$projectDir"
+        # "$execFnName"
+        # "$@" 以存於共享變數中，此處只為示範使用。
+        "$execFnName" "$@"
+        tmpRtnCode=$?
+
+        # 復原環境
+        [ ! -f "$sameFilePath"  ] || rm "$sameFilePath"
+        [ ! -f "$stdoutTmpPath" ] || rm "$stdoutTmpPath"
+
+        if [ $tmpRtnCode -ne 0 ]; then
+            echo "\"$method\" 方法無法處理 \"$fileExt\" 副檔名。"
             exit 1
-            ;;
-        * )
-            echo "找不到 \"$method\" 方法。"
-            exit 1
-            ;;
-    esac
+        fi
+    else
+        echo "找不到 \"$method\" 方法。"
+        exit 1
+    fi
 }
 fnMain_syntax() {
     local googleTrendsUrl="https://trends.google.com.tw/trends/trendingsearches/daily/rss?geo=TW"
@@ -60,25 +70,41 @@ fnMain_syntax() {
         sed -e "s/[^:]*<title>\(.*\)<\/title>.*/\1/" \
         > "$chanSyntaxInfoPath"
 }
+fnMain_syntaxRun() {
+    fnCarryArgs "$@"
+}
+fnMain_syntaxDev() {
+    fnCarryArgs "$@"
+    exit 1
+}
 fnMain_syntaxGrep() {
     local keyword=`
         sed "s/\W/\n/g" "$chanBufferContentPath" |
             grep "..." | sort | uniq -c | sort -rn | head -n 1 |
             sed -e "s/^ *[0-9]* \(.*\)/\1/"
     `
-    grep -sn "\<$keyword\>" $chanBufferContentPath |
+    echo "使用最多的字詞是 \"$keyword\""
+    cat "$chanBufferContentPath" |
         fnQuickfixGrep "$filePath" "$keyword" \
         > "$chanSyntaxInfoPath"
 }
 fnMain_syntaxSimple() {
     local randIndex=`awk -F "" '{print $1":"($2$3)%88+1}' <<< "$RANDOM"`
     printf "$filePath:%s\n" \
-        "$randIndex: 不看立場，只論是非，改變總在跳脫舒適圈之後" \
-        "3:13: 生活融於政治，言行落實律法" \
-        "5:15: 信仰雖有價值，但是沒人買得起" \
+        "$randIndex::不看立場，只論是非，改變總在跳脫舒適圈之後" \
+        "3:13:W:生活融於政治，言行落實律法" \
+        "5:15:E:信仰雖有價值，但是沒人買得起" \
         > "$chanSyntaxInfoPath"
 }
-fnMain_carryArgs() {
+fnMain_hello() {
+    echo hello
+}
+
+
+##shStyle 函式庫
+
+
+fnCarryArgs() {
     printf "PWD: %s\nfile: %s\n" "$PWD" "`realpath "$0"`"
     printf "CmdByU: (%s)" "$#"
     printf " %s," "$@"
@@ -86,10 +112,6 @@ fnMain_carryArgs() {
     printf "method: %s\nfPat: %s\nfExt: %s\npjDir: %s\nvcDir: %s\nuseDockerMsg: %s\n" \
         "$1" "$2" "$3" "$4" "$5" "$6"
 }
-
-
-##shStyle 函式庫
-
 
 # 顯示 Quickfix 規範的格式
 fnQuickfixGrep() {
@@ -125,7 +147,7 @@ fnQuickfixGrepProcess() {
     local awkExpr="{tPrefix=\"$fileName:\"\$1; tKW=\"$keyword\"}"
     local awkExpr+='$1="";'
     local awkExpr+="{tn=substr(\$0,2)}"
-    local awkExpr+='{print tPrefix ":" index(tn,tKW) ":" tn}'
+    local awkExpr+='{print tPrefix ":" index(tn,tKW) "::" tn}'
 
     awk -F ':' "$awkExpr" <<< "$grepResult"
 }

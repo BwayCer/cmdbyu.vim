@@ -6,7 +6,6 @@ endfunction
 
 let s:_dirvi = fnamemodify(resolve(expand('<sfile>:p')), ':h:h')
 let s:findVimCodeDirFilePath = s:_dirvi . '/lib/findVimCodeDirectory.sh'
-let s:cleanChannelFilePath   = s:_dirvi . '/lib/cleanChannel.sh'
 
 " cmdByU.vim 的執行文件路徑
 let s:shFilePathPart = '.vimcode/cmdbyu.sh'
@@ -16,6 +15,12 @@ let s:chanBufferContentPathPart = s:shFileParentPathPart . '/chanBufferContent.c
 let s:chanFormatPathPart = s:shFileParentPathPart . '/chanFormat.cmdbyu.tmp'
 let s:chanSyntaxPathPart = s:shFileParentPathPart . '/chanSyntax.cmdbyu.tmp'
 
+
+" 淨空通訊文件
+function! s:cleanChannel(dirPath)
+    call canUtils#Sh('find', a:dirPath, '-type', 'f', '-name', 'chan*.cmdbyu.tmp',
+        \ '-exec', 'rm', '{}', '%:\;')
+endfunction
 
 " 檢查執行文件是否存在，若存在則返回專案目錄路徑
 " @throws '找不到擁有 s:shFilePathPart 的目錄
@@ -75,7 +80,7 @@ function! s:getRunCmdTxt(machine, method, fileAbsolutePath, fileExt, projectDir,
     let l:shFileParentDir = a:shFileDir . '/' . s:shFileParentPathPart
 
     let l:cmdTxt = canUtils#GetCmdTxt('sh', l:shFile,
-        \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : '.' . a:fileExt),
+        \ a:method, a:fileAbsolutePath, (empty(a:fileExt) ? '' : a:fileExt),
         \ a:projectDir, l:shFileParentDir, (l:ynUseDocker ? 'inDocker' : 'unDocker'))
 
     if l:ynUseDocker
@@ -104,14 +109,23 @@ function! s:run_syntax(chanFormatPath, chanSyntaxPath, info)
     if getfsize(a:chanSyntaxPath) > 0
         " 使用預設給定名稱
         let w:quickfix_title = ''
+        let &errorformat
+            \ =  '%f:%l:%c:%t:%m'
+            \ . ',%f:%l:%c::%m'
         let &makeprg = canUtils#GetCmdTxt('cat', a:chanSyntaxPath)
         make
         copen
+
         let w:quickfix_title = 'CmdByU ' . a:info.machine
             \ . (empty(a:info.assignShFileDir) ? ' project' : ' ' . a:info.assignShFileDir)
             \ . ' ' . a:info.method
             \ . ' ' . substitute(a:info.fileAbsolutePath,
                 \ fnamemodify(a:info.projectDir, ':h') . '/', '', '')
+
+        let l:heightSize = line("$")
+        let l:heightSize = l:heightSize < 8 ? l:heightSize + 1 : 9
+        exec 'resize ' . l:heightSize
+
         " 單引號無效果
         exec "normal! \<CR>"
     else
@@ -135,8 +149,7 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
     let l:chanSyntaxPath = l:shFileDir . '/' . s:chanSyntaxPathPart
 
     " 建立溝通用的文件環境
-    call canUtils#Sh('sh', s:cleanChannelFilePath,
-        \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
+    call s:cleanChannel(l:shFileDir)
     " 不用 \"\" 包覆沒關係，會被以空白格寫入
     exec 'write! ' . l:chanBufContentPath
 
@@ -151,8 +164,7 @@ function! s:run(fileAbsolutePath, fileExt, machine, method, assignShFileDirArgu)
             \ 'assignShFileDir': a:assignShFileDirArgu}
         call s:run_syntax(l:chanFormatPath, l:chanSyntaxPath, l:info)
     endif
-    call canUtils#Sh('sh', s:cleanChannelFilePath,
-        \ l:chanBufContentPath, l:chanFormatPath, l:chanSyntaxPath)
+    call s:cleanChannel(l:shFileDir)
 endfunction
 
 " 容器執行命令
